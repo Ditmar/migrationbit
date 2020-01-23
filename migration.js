@@ -15,7 +15,10 @@ var config = {
     dstPort:27017,
     password:''
 };
-
+var limitmovies = 3;
+var init = 0;
+var final = limitmovies;
+var total = 100;
 var server = tunnel(config, function (error, server) {
     if(error){
         console.log("SSH connection error: " + error);
@@ -29,7 +32,7 @@ var server = tunnel(config, function (error, server) {
         var Schema = mongoose.Schema;
         var thingSchema = new Schema({}, { strict: false });
         var moviesdb = mongoose.model('movies', thingSchema);
-        var moviesdata = await moviesdb.find({realurl:true, "optinalurls.url":/fembed/}).sort({_id:-1}).limit(6);
+        var moviesdata = await moviesdb.find({realurl:true, "optinalurls.url":/fembed/}).sort({_id:-1}).limit(100);
 
         //parse cool data
         var movies = []
@@ -42,16 +45,22 @@ var server = tunnel(config, function (error, server) {
                 }
             }
         }
-        for (var i = 0; i < movies.length; i++) {
-            var splitmovies = movies[i].split(/\//);
-            var idmovie = splitmovies[splitmovies.length - 1];
-            startdownloadvideo("https://feurl.com/api/source/" + idmovie);
+        total = movies.length;
+        startmigration(init, final, total);
         
-        }
     });
 
 });
-
+function startmigration (init, final, total) {
+    if (final < total) {
+        for (var i = init; i < final; i++) {
+            var splitmovies = movies[i].split(/\//);
+            var idmovie = splitmovies[splitmovies.length - 1];
+            startdownloadvideo("https://feurl.com/api/source/" + idmovie);
+        }
+    }
+    console.log("finish");
+}
 
 
 /*for (var i = 0; i < movies.length; i++) {
