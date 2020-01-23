@@ -119,9 +119,9 @@ var urlbitporno = "https://upload.bitporno.com/bp/index.php";
 function uploaddata(url, name) {
     countcontrol++;
     if (countcontrol >= limitmovies) {
-        init = total;
-        total += limitmovies;
-        startmigration(init, total, total);
+        init = final;
+        final += limitmovies;
+        startmigration(init, final, total);
     }
   var req = request.post(url, async function(err, resp, body) {
     if (err) {
