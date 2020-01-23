@@ -10,12 +10,12 @@ var config = {
     username:'ubuntu',
     host:'3.13.42.15',
     agent : process.env.SSH_AUTH_SOCK,
-    privateKey:require('fs').readFileSync('/Users/Ditmar/peliscastserver/newserverditmar.pem'),
+    privateKey:require('fs').readFileSync('/home/ditmar/Escritorio/newserverditmar.pem'),
     port:22,
     dstPort:27017,
     password:''
 };
-
+var moviesdb = null;
 var server = tunnel(config, function (error, server) {
     if(error){
         console.log("SSH connection error: " + error);
@@ -28,25 +28,27 @@ var server = tunnel(config, function (error, server) {
         console.log("DB connection successful!");
         var Schema = mongoose.Schema;
         var thingSchema = new Schema({}, { strict: false });
-        var moviesdb = mongoose.model('movies', thingSchema);
-        var moviesdata = await moviesdb.find({realurl:true, "optinalurls.url":/fembed/}).sort({_id:-1}).limit(6);
-
+        moviesdb = mongoose.model('movies', thingSchema);
+        console.log("Try do query");
+        var moviesdata = await moviesdb.find({realurl:true, "optinalurls.url":/fembed/, "optinalurls.url":{$not:/bitporno/}}).sort({_id:1}).limit(20);
+        console.log("Query Cool");
         //parse cool data
         var movies = []
         for (var i = 0; i < moviesdata.length; i++) {
             var json = moviesdata[i].toJSON();
             for (var j = 0; j < json.optinalurls.length; j++) {
-                if (json.optinalurls[j].url.match(/fembed/g) != null) {
+                if (json.optinalurls[j].url.match(/fembed/g) != null || json.optinalurls[j].url.match(/pelisplus/g) != null) {
                     movies.push({url:json.optinalurls[j].url, idmovie:json.idmovie});
                     break;
                 }
             }
         }
+        console.log(movies);
         for (var i = 0; i < movies.length; i++) {
-            var splitmovies = movies[i].split(/\//);
+            var splitmovies = movies[i].url.split(/\//);
             var idmovie = splitmovies[splitmovies.length - 1];
             startdownloadvideo("https://feurl.com/api/source/" + idmovie);
-        
+
         }
     });
 
@@ -70,11 +72,11 @@ function startdownloadvideo (urldata) {
           var json = JSON.parse(body);
           if (json.success == false) {
             //video borrado;
-            console.log("Video Borrado");
+            console.log("El video no existe");
             return;
           }
           var last = json.data.length - 1;
-    
+
           console.log(json.data[last].file);
           //console.log(Object.keys(data.req.path));
           var keys = data.req.path.split(/\//);
@@ -103,7 +105,7 @@ var download = async function(uri, filename, callback) {
 };
 var urlbitporno = "https://upload.bitporno.com/bp/index.php";
 function uploaddata(url, name) {
-  var req = request.post(url, function(err, resp, body) {
+  var req = request.post(url, async function(err, resp, body) {
     if (err) {
       console.log("Error!");
     } else {
@@ -114,7 +116,9 @@ function uploaddata(url, name) {
       } catch (err) {
         console.error(err);
       }
-      console.log(json.files[0].url);
+      // upload Links
+      console.log(json.files[0].url + " - " + fordeletename);
+      updateMovie(json.files[0].url, fordeletename.replace(/.mp4/,""));
     }
   });
   var form = req.form();
@@ -122,4 +126,18 @@ function uploaddata(url, name) {
   form.append("page_id", "2");
   form.append("user_id", "");
   console.log("Uploading");
+}
+
+async function updateMovie(urlbit, filename) {
+  var updatemovies = await moviesdb.find({realurl:true, "optinalurls.url":new RegExp(filename)}).sort({_id:1});
+  if (updatemovies.length == 1) {
+    console.log("actualizamos");
+    var updatemovie = updatemovies[0];
+    var mm = updatemovie.toJSON();
+    var optinalurls = mm.optinalurls;
+    optinalurls.push({url : urlbit, web : ""});
+    moviesdb.findOneAndUpdate({idmovie: mm.idmovie}, {optinalurls : optinalurls}, (err, docs) => {
+      console.log("Actualizado el enlace " + mm.idmovie);
+    });
+  }
 }
