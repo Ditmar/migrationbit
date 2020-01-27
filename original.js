@@ -10,7 +10,7 @@ var config = {
     username:'ubuntu',
     host:'3.13.42.15',
     agent : process.env.SSH_AUTH_SOCK,
-    privateKey:require('fs').readFileSync('/home/ditmar/Escritorio/newserverditmar.pem'),
+    privateKey:require('fs').readFileSync('/Users/Ditmar/peliscastserver/newserverditmar.pem'),
     port:22,
     dstPort:27017,
     password:''
@@ -30,7 +30,7 @@ var server = tunnel(config, function (error, server) {
         var thingSchema = new Schema({}, { strict: false });
         moviesdb = mongoose.model('movies', thingSchema);
         console.log("Try do query");
-        var moviesdata = await moviesdb.find({idmovie:""}).sort({_id:1}).limit(1);
+        var moviesdata = await moviesdb.find({realurl : true, "optinalurls.url":{$not:/bitporno/}}).sort({_id:-1}).limit(50);
         console.log("Query Cool");
         //parse cool data
         var movies = []
@@ -47,7 +47,7 @@ var server = tunnel(config, function (error, server) {
         for (var i = 0; i < movies.length; i++) {
             var splitmovies = movies[i].url.split(/\//);
             var idmovie = splitmovies[splitmovies.length - 1];
-            startdownloadvideo("https://feurl.com/api/source/" + idmovie);
+            await startdownloadvideo("https://feurl.com/api/source/" + idmovie);
 
         }
     });
@@ -63,20 +63,34 @@ var server = tunnel(config, function (error, server) {
 
 }*/
 function startdownloadvideo (urldata) {
-    request.post(urldata, function(
+    return new Promise((resolve, reject) => {
+      request.post(urldata, function(
         err,
         data,
         body
       ) {
+        console.log("QUERY video");
         if (body != null) {
-          var json = JSON.parse(body);
+          try {
+            
+            var json = JSON.parse(data.body.toString());
+          } catch(e) {
+            console.log("El video no existe JSON INCORERCTO " + data.req.path);
+            resolve(true);
+            return;
+          }
           if (json.success == false) {
             //video borrado;
             console.log("El video no existe");
+            resolve(true);
             return;
           }
-          var last = json.data.length - 1;
-
+          
+          if (json.data.length == 3) {
+            var last = 1;
+          } else {
+            var last = json.data.length - 1;
+          }
           console.log(json.data[last].file);
           //console.log(Object.keys(data.req.path));
           var keys = data.req.path.split(/\//);
@@ -88,7 +102,9 @@ function startdownloadvideo (urldata) {
           });
           console.log("Download Now...");
         }
+        resolve(true);
       });
+    });
 }
 
 var download = async function(uri, filename, callback) {
