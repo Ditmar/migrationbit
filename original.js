@@ -30,7 +30,7 @@ var server = tunnel(config, function (error, server) {
         var thingSchema = new Schema({}, { strict: false });
         moviesdb = mongoose.model('movies', thingSchema);
         console.log("Try do query");
-        var moviesdata = await moviesdb.find({realurl : true, "optinalurls.url":{$not:/bitporno/}}).sort({_id:-1}).limit(50);
+        var moviesdata = await moviesdb.find({realurl : true, "optinalurls.url":{$not:/bitporno/}}).sort({_id:-1}).limit(150);
         console.log("Query Cool");
         //parse cool data
         var movies = []
@@ -47,8 +47,10 @@ var server = tunnel(config, function (error, server) {
         for (var i = 0; i < movies.length; i++) {
             var splitmovies = movies[i].url.split(/\//);
             var idmovie = splitmovies[splitmovies.length - 1];
-            await startdownloadvideo("https://feurl.com/api/source/" + idmovie);
-
+            var r = await startdownloadvideo("https://feurl.com/api/source/" + idmovie);
+            if (r) {
+              await delay();
+            }
         }
     });
 
@@ -62,6 +64,14 @@ var server = tunnel(config, function (error, server) {
     startdownloadvideo("https://feurl.com/api/source/" + idmovie);
 
 }*/
+async function delay () {
+  return new Promise((resolve, reject) => {
+      var interval= setInterval(function(){ 
+          clearInterval(interval);
+          resolve() 
+      }, 6000);
+  });
+}
 function startdownloadvideo (urldata) {
     return new Promise((resolve, reject) => {
       request.post(urldata, function(
@@ -76,13 +86,13 @@ function startdownloadvideo (urldata) {
             var json = JSON.parse(data.body.toString());
           } catch(e) {
             console.log("El video no existe JSON INCORERCTO " + data.req.path);
-            resolve(true);
+            resolve(false);
             return;
           }
           if (json.success == false) {
             //video borrado;
             console.log("El video no existe");
-            resolve(true);
+            resolve(false);
             return;
           }
           
