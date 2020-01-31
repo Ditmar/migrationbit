@@ -16,6 +16,7 @@ var config = {
     password:''
 };
 var moviesdb = null;
+var limit = 100;
 var server = tunnel(config, function (error, server) {
     if(error){
         console.log("SSH connection error: " + error);
@@ -30,7 +31,9 @@ var server = tunnel(config, function (error, server) {
         var thingSchema = new Schema({}, { strict: false });
         moviesdb = mongoose.model('movies', thingSchema);
         console.log("Try do query");
-        var moviesdata = await moviesdb.find({realurl : true, "optinalurls.url":{$not:/bitporno/}}).sort({_id:-1}).limit(150);
+        //var moviesdata = await moviesdb.find({idmovie:"ec8afc8"}).sort({_id:-1}).limit(1);
+        
+        var moviesdata = await moviesdb.find({realurl : true, "optinalurls.url":{$not:/bitporno/}}).sort({_id:-1});
         console.log("Query Cool");
         //parse cool data
         var movies = []
@@ -91,11 +94,13 @@ function startdownloadvideo (urldata) {
           }
           if (json.success == false) {
             //video borrado;
-            console.log("El video no existe");
+            
+            console.log("El video no existe " + data.req.path);
+
             resolve(false);
             return;
           }
-          
+          //var last = 0;
           if (json.data.length == 3) {
             var last = 1;
           } else {
