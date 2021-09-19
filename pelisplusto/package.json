@@ -1,0 +1,21 @@
+{
+  "name": "pelisplusto",
+  "version": "1.0.0",
+  "description": "Scrapping",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ditmar",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "cli-color": "^2.0.0",
+    "jsdom": "^16.5.2",
+    "mongoose": "^5.12.3",
+    "request": "^2.88.2",
+    "sha1": "^1.1.1",
+    "tunnel-ssh": "^4.1.4"
+  }
+}

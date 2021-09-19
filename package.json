@@ -12,6 +12,7 @@
     "cli-color": "^2.0.0",
     "mongoose": "^5.8.9",
     "request": "^2.88.0",
+    "sha1": "^1.1.1",
     "tunnel-ssh": "^4.1.4"
   }
 }

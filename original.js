@@ -6,6 +6,8 @@ var stdin = {};
 //"https://cuevana3.io/23624/death-in-berruecos"
 var mongoose = require('mongoose');
 var tunnel = require('tunnel-ssh');
+var regularparse = /\{[\s\S]+?\}/g;
+var uqloadlink = /https:\/\/\w+[.]uqload.com\/[\w-]+\/v.mp4/g;
 var config = {
     username:'ubuntu',
     host:'3.13.42.15',
@@ -16,6 +18,30 @@ var config = {
     password:''
 };
 var moviesdb = null;
+async function init () {
+  /*console.log("Bajando Upload!")
+  var link = await getlinkuqload("https://uqload.com/embed-f4ocozx17wmo.html");
+  console.log(link);
+  download(link, "./locurasdelemperador.mp4", function () {
+    console.log("Descargando!! ");
+  });*/
+}
+init();
+var download = async function(uri, filename, callback) {
+  request.head(uri, function(err, res, body) {
+    if (err) {
+      console.log(`No se pudo descargar la pelicula`);
+    }
+    request({headers: {
+      'Referer': 'https://uqload.com/embed-f4ocozx17wmo.html'
+    },uri })
+      .pipe(fs.createWriteStream(filename))
+      .on("close", function() {
+        callback(filename);
+      });
+  });
+};
+return;
 var limit = 100;
 var server = tunnel(config, function (error, server) {
     if(error){
@@ -33,20 +59,19 @@ var server = tunnel(config, function (error, server) {
         console.log("Try do query");
         //var moviesdata = await moviesdb.find({idmovie:"ec8afc8"}).sort({_id:-1}).limit(1);
         
-        var moviesdata = await moviesdb.find({realurl : true, "optinalurls.url":{$not:/bitporno/}}).sort({_id:-1});
+        var moviesdata = await moviesdb.find({idmovie:"plus_864ad5e"}).sort({_id:-1}).skip();
         console.log("Query Cool");
-        //parse cool data
         var movies = []
         for (var i = 0; i < moviesdata.length; i++) {
             var json = moviesdata[i].toJSON();
             for (var j = 0; j < json.optinalurls.length; j++) {
-                if (json.optinalurls[j].url.match(/fembed/g) != null || json.optinalurls[j].url.match(/pelisplus/g) != null) {
+                if ((json.optinalurls[j].url.match(/fembed/g) != null || json.optinalurls[j].url.match(/pelisplus/g) != null)) {
+
                     movies.push({url:json.optinalurls[j].url, idmovie:json.idmovie});
                     break;
                 }
             }
         }
-        console.log(movies);
         for (var i = 0; i < movies.length; i++) {
             var splitmovies = movies[i].url.split(/\//);
             var idmovie = splitmovies[splitmovies.length - 1];
@@ -58,8 +83,78 @@ var server = tunnel(config, function (error, server) {
     });
 
 });
-
-
+function checkFembed (urldata) {
+  return new Promise((resolve, reject) => {
+    request.post(urldata, function(
+      err,
+      data,
+      body
+    ) {
+      console.log("QUERY video");
+          if (body != null) {
+            try {
+              
+              var json = JSON.parse(data.body.toString());
+            } catch(e) {
+              console.log("El video no existe JSON INCORERCTO " + data.req.path);
+              resolve(false);
+              return;
+            }
+            if (json.success == false) {
+              console.log("El video no existe " + data.req.path);
+              resolve(false);
+              return;
+            }
+            resolve(true);
+          }
+          resolve(false);
+    });
+  });
+}
+function checkUqload (urldata) {
+  return new Promise ((resolve, reject) => {
+    request(urldata, (err, req, body) => {
+        if (err) {
+          resolve(false, "Enlace Roto");
+          return;
+        }
+        var data = docs.body.toString();
+        if (err) {
+          resolve(false);
+          return;
+        }
+        if (data.match(/File was deleted/g)) {
+          resolve(false, "Enlace Roto");
+        } else if (data.match(/Origin is unreachable/g)) {
+          resolve(false, "523");
+        } else if(data.match(/Uqload Team/g)) {
+          resolve(false, "Cool");
+        } else {
+          resolve(true, "Cool")
+        }
+    });
+  });
+}
+function getlinkuqload(url) {
+  return new Promise((resolve, reject) => {
+    request(url, (err, req, body) => {
+      if (err) {
+        console.log("Error to download the video");
+        resolve(false);
+        return;
+      }
+      var link = body.toString().match(uqloadlink);
+      if ( link != null) {
+        console.log(link[0]);
+        resolve(link[0]);
+      } else {
+        console.log("can not take the link");
+        resolve(false);
+      }
+    });
+  });
+  
+}
 
 /*for (var i = 0; i < movies.length; i++) {
     var splitmovies = movies[i].split(/\//);
@@ -122,18 +217,7 @@ function startdownloadvideo (urldata) {
     });
 }
 
-var download = async function(uri, filename, callback) {
-  request.head(uri, function(err, res, body) {
-    if (err) {
-      console.log(`No se pudo descargar la pelicula`);
-    }
-    request(uri)
-      .pipe(fs.createWriteStream(filename))
-      .on("close", function() {
-        callback(filename);
-      });
-  });
-};
+
 var urlbitporno = "https://upload.bitporno.com/bp/index.php";
 function uploaddata(url, name) {
   var req = request.post(url, async function(err, resp, body) {
